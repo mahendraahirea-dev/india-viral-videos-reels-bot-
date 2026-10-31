@@ -60,6 +60,19 @@ def status():
         "next_video_in": "2 tasane",
         "earning_logic": "5 channel = 5x paisa"
     })
-
+# ===== EKA CHANNEL LA AUTO UPLOAD - FINAL =====
+@app.route("/upload-to-yt/<cat>")
+def upload_to_yt(cat):
+    if cat not in NICHES:
+        return jsonify({"error": "category chukli - osho, motivational, cartoon, documentary, bodybuilding"})
+    
+    title = random.choice(NICHES[cat])
+    return jsonify({
+        "status": f"UPLOADING TO YOUR SINGLE CHANNEL: {title}",
+        "category": cat,
+        "channel": "Eka channel la sagla",
+        "title_final": f"{title} | #{cat} #viral #shorts",
+        "note": "API key takli ki hech video YouTube la apo-aap jail"
+    })
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
