@@ -1,21 +1,65 @@
-from fastapi import FastAPI
-import random
+from flask import Flask, jsonify
+import random, threading, time, os
 from datetime import datetime
-app = FastAPI()
-TOPICS = {
- "sarkari_yojana": ["PM Silai Machine Yojana 15000", "Ladli Behna Yojana", "PM Awas Yojana 2.5 Lakh"],
- "business": ["Gaon me 20k wala business", "0 se Crore - Raj Shamani Style", "Student 500 roj kamao"],
- "motivation": ["Aaj ka gyan zindagi badal dega", "1% Rule - Roz better bano"],
- "bhakti": ["Hanuman mantra sunte hi kaam banega"]
+
+app = Flask(__name__)
+
+# ===== 5 MONEY NICHES - EKACH BOT MADHE =====
+NICHES = {
+    "osho": ["Osho - Jivan ka sach", "Osho on Love & Life", "Osho Motivation", "Osho - Man ki shanti"],
+    "motivational": ["Aaj ka Suvichar", "Life Changing Line", "Success Mindset", "Never Give Up"],
+    "cartoon": ["Chhota Bheem Funny", "Motu Patlu Comedy", "Kids Moral Story", "Cartoon Learning"],
+    "documentary": ["World Mystery", "Ancient India Secret", "Space Documentary", "Wild Life"],
+    "bodybuilding": ["6 Pack in 30 Days", "Desi Gym Motivation", "Protein at Home", "Chest Workout"]
 }
-@app.get("/")
+
+VIDEOS_DB = []
+
+def auto_5_niche_engine():
+    while True:
+        for category in NICHES:
+            title = random.choice(NICHES[category])
+            video = {
+                "category": category,
+                "title": title,
+                "hashtags": f"#{category} #viral #shorts",
+                "views_target": f"{random.randint(1,10)}M",
+                "status": "Ready to Upload",
+                "time": str(datetime.now())
+            }
+            VIDEOS_DB.append(video)
+            print(f"AUTO: {category} -> {title}")
+            time.sleep(7200) # Dar 2 tasane ek category
+
+threading.Thread(target=auto_5_niche_engine, daemon=True).start()
+
+@app.route("/")
 def home():
-    return {"status": "LIVE - SAFE, Dhan se alag", "time": str(datetime.now())}
-@app.get("/create-reel")
-def create_reel():
-    niche = random.choice(list(TOPICS.keys()))
-    topic = random.choice(TOPICS[niche])
-    return {"niche": niche, "topic": topic, "script": f"{topic} - Viral hoga! Follow karo.", "format": "9:16"}
-@app.get("/.well-known/claude-connector")
-def connector():
-    return {"name": "India Viral Reels - Safe"}
+    return jsonify({
+        "status": "5-IN-1 FULL AUTO BOT LIVE ✅",
+        "dhan_bot": "100% SAFE",
+        "niches": list(NICHES.keys()),
+        "mode": "Osho + Motivational + Cartoon + Documentary + Bodybuilding = Paisa",
+        "total": len(VIDEOS_DB)
+    })
+
+@app.route("/reels")
+def reels():
+    # category wise filter karu shakto: /reels?cat=osho
+    from flask import request
+    cat = request.args.get("cat")
+    if cat in NICHES:
+        filtered = [v for v in VIDEOS_DB if v["category"] == cat]
+        return jsonify(filtered[-20:])
+    return jsonify(VIDEOS_DB[-30:])
+
+@app.route("/auto-status")
+def status():
+    return jsonify({
+        "message": "Sagla apo-aap chaluy bhau!",
+        "next_video_in": "2 tasane",
+        "earning_logic": "5 channel = 5x paisa"
+    })
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
