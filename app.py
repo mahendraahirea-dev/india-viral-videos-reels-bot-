@@ -1,78 +1,42 @@
-from flask import Flask, jsonify
-import random, threading, time, os
+from flask import Flask
+import threading, time, feedparser
+from gtts import gTTS
+from moviepy.editor import *
+from PIL import Image, ImageDraw
+import textwrap
 from datetime import datetime
 
 app = Flask(__name__)
+BLOGGER_RSS = "https://lemonnliveofficial.blogspot.com/feeds/posts/default?alt=rss"
 
-# ===== 5 MONEY NICHES - EKACH BOT MADHE =====
-NICHES = {
-    "osho": ["Osho - Jivan ka sach", "Osho on Love & Life", "Osho Motivation", "Osho - Man ki shanti"],
-    "motivational": ["Aaj ka Suvichar", "Life Changing Line", "Success Mindset", "Never Give Up"],
-    "cartoon": ["Chhota Bheem Funny", "Motu Patlu Comedy", "Kids Moral Story", "Cartoon Learning"],
-    "documentary": ["World Mystery", "Ancient India Secret", "Space Documentary", "Wild Life"],
-    "bodybuilding": ["6 Pack in 30 Days", "Desi Gym Motivation", "Protein at Home", "Chest Workout"]
-}
+def create_viral_video():
+    feed = feedparser.parse(BLOGGER_RSS)
+    title = feed.entries[0].title if feed.entries else "Ahilyanagar Breaking"
+    print(f"AUTO: {title} -> YT Video", flush=True)
+    try:
+        tts = gTTS(text=title, lang='mr')
+        tts.save("/tmp/voice.mp3")
+        audio = AudioFileClip("/tmp/voice.mp3")
+        bg = Image.new('RGB', (1080,1920), color=(10,25,60))
+        ImageDraw.Draw(bg).text((50,300), textwrap.fill(title, 22), fill=(255,255,255))
+        bg.save("/tmp/bg.png")
+        clip = ImageClip("/tmp/bg.png").set_duration(audio.duration).set_audio(audio)
+        clip.write_videofile(f"/tmp/SHORT_{datetime.now():%Y%m%d_%H%M}.mp4", fps=24, logger=None)
+        print("VIDEO READY - PAISA BOT DONE", flush=True)
+    except Exception as e:
+        print(f"ERROR: {e}", flush=True)
 
-VIDEOS_DB = []
-
-def auto_5_niche_engine():
+def background_worker():
+    print("YT PAISA BOT WORKER STARTED", flush=True)
     while True:
-        for category in NICHES:
-            title = random.choice(NICHES[category])
-            video = {
-                "category": category,
-                "title": title,
-                "hashtags": f"#{category} #viral #shorts",
-                "views_target": f"{random.randint(1,10)}M",
-                "status": "Ready to Upload",
-                "time": str(datetime.now())
-            }
-            VIDEOS_DB.append(video)
-            print(f"AUTO: {category} -> {title}")
-            time.sleep(7200) # Dar 2 tasane ek category
+        create_viral_video()
+        time.sleep(10800) # dar 3 tas
 
-threading.Thread(target=auto_5_niche_engine, daemon=True).start()
+threading.Thread(target=background_worker, daemon=True).start()
 
-@app.route("/")
+@app.route('/')
 def home():
-    return jsonify({
-        "status": "5-IN-1 FULL AUTO BOT LIVE ✅",
-        "dhan_bot": "100% SAFE",
-        "niches": list(NICHES.keys()),
-        "mode": "Osho + Motivational + Cartoon + Documentary + Bodybuilding = Paisa",
-        "total": len(VIDEOS_DB)
-    })
+    return "<h1>YT PAISA BOT LIVE ✅</h1><p>Auto every 3 hours</p>"
 
-@app.route("/reels")
-def reels():
-    # category wise filter karu shakto: /reels?cat=osho
-    from flask import request
-    cat = request.args.get("cat")
-    if cat in NICHES:
-        filtered = [v for v in VIDEOS_DB if v["category"] == cat]
-        return jsonify(filtered[-20:])
-    return jsonify(VIDEOS_DB[-30:])
-
-@app.route("/auto-status")
-def status():
-    return jsonify({
-        "message": "Sagla apo-aap chaluy bhau!",
-        "next_video_in": "2 tasane",
-        "earning_logic": "5 channel = 5x paisa"
-    })
-# ===== EKA CHANNEL LA AUTO UPLOAD - FINAL =====
-@app.route("/upload-to-yt/<cat>")
-def upload_to_yt(cat):
-    if cat not in NICHES:
-        return jsonify({"error": "category chukli - osho, motivational, cartoon, documentary, bodybuilding"})
-    
-    title = random.choice(NICHES[cat])
-    return jsonify({
-        "status": f"UPLOADING TO YOUR SINGLE CHANNEL: {title}",
-        "category": cat,
-        "channel": "Eka channel la sagla",
-        "title_final": f"{title} | #{cat} #viral #shorts",
-        "note": "API key takli ki hech video YouTube la apo-aap jail"
-    })
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
